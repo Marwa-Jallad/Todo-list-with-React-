@@ -1,49 +1,46 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "./styles.css";
 //import crypto from "crypto"; crypto is library to generate id but it didnt work in with me
 import { v4 as uuidv4 } from "uuid"; //
+import { NewTodoForm } from "./NewTodoForm";
+import { TodoList } from "./TodoList";
 
 export default function App() {
-  const [newItem, setNewItem] = useState("");
-  const [Todos, setTodos] = useState([]);
-  function handleSubmit(e) {
-    e.preventDefault();
-    // setTodos([...Todos, {id: uuidv4(), title: newItem, completed: false}]) this way works but its better to use a new variable called (currentTodo) so we dont always start from (Todos) variable which is empty array
+  const [todos, setTodos] = useState(() => {
+    const localValue = localStorage.getItem("ITEMS");
+    if (localValue == null) return [];
+    return JSON.parse(localValue);
+  });
+
+  useEffect(() => {
+    localStorage.setItem("ITEMS", JSON.stringify(todos));
+  }, [todos]);
+
+  function AddTodo(title) {
     setTodos((currentTodos) => {
-      return [
-        ...currentTodos,
-        { id: uuidv4(), title: newItem, completed: false },
-      ];
+      return [...currentTodos, { id: uuidv4(), title, completed: false }];
+    });
+  }
+  function toggleTodo(id, completed) {
+    setTodos((currentTodos) => {
+      return currentTodos.map((todo) => {
+        if (todo.id === id) {
+          return { ...todo, completed };
+        }
+        return todo;
+      });
+    });
+  }
+  function deleteTodo(id) {
+    setTodos((currentTodos) => {
+      return currentTodos.filter((todo) => todo.id !== id);
     });
   }
   return (
     <>
-      <form onSubmit={handleSubmit} className="new-item-form">
-        <div className="form-row">
-          <label htmlFor="item">New item </label>
-          <input
-            value={newItem}
-            onChange={(e) => setNewItem(e.target.value)}
-            type="text"
-            id="item"
-          />
-        </div>
-        <button className="btn">Add</button>
-      </form>
+      <NewTodoForm onSubmit={AddTodo} />
       <h1 className="header">Todo List</h1>
-      <ul className="list">
-        {Todos.map((todo) => {
-          return (
-            <li key={todo.id}>
-              <label>
-                <input type="checkbox" checked={todo.completed} />
-                {todo.title}
-              </label>
-              <button className="btn btn-danger">Delete</button>
-            </li>
-          );
-        })}
-      </ul>
+      <TodoList todos={todos} toggleTodo={toggleTodo} deleteTodo={deleteTodo} />
     </>
   );
 }
